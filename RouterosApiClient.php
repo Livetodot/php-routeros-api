@@ -96,7 +96,7 @@ class RouterosApiClient
 				socket_set_timeout($this->socket, $this->timeout);
 				$this->write('/login');
 				$RESPONSE = $this->read(false);
-				if ($RESPONSE[0] == '!done') {
+				if (isset($RESPONSE[0]) && $RESPONSE[0] == '!done') {
 					$MATCHES = array();
 					if (preg_match_all('/[^=]+/i', $RESPONSE[1], $MATCHES)) {
 						if ($MATCHES[0][0] == 'ret' && strlen($MATCHES[0][1]) == 32) {
@@ -156,10 +156,11 @@ class RouterosApiClient
 					'!re',
 					'!trap'
 				))) {
-				if ($x == '!re') {
-					$CURRENT =& $PARSED[];
-				} else {
-					$CURRENT =& $PARSED[$x][];
+					if ($x == '!re') {
+						$CURRENT =& $PARSED[];
+					} else {
+						$CURRENT =& $PARSED[$x][];
+					}
 				} else if ($x != '!done') {
 					$MATCHES = array();
 					if (preg_match_all('/[^=]+/i', $x, $MATCHES)) {
@@ -174,8 +175,9 @@ class RouterosApiClient
 				$PARSED = $singlevalue;
 			}
 			return $PARSED;
-		} else
+		} else {
 			return array();
+		}
 	}
 
 
@@ -198,10 +200,11 @@ class RouterosApiClient
 					'!re',
 					'!trap'
 				))) {
-				if ($x == '!re') {
-					$CURRENT =& $PARSED[];
-				} else {
-					$CURRENT =& $PARSED[$x][];
+					if ($x == '!re') {
+						$CURRENT =& $PARSED[];
+					} else {
+						$CURRENT =& $PARSED[$x][];
+					}
 				} else if ($x != '!done') {
 					$MATCHES = array();
 					if (preg_match_all('/[^=]+/i', $x, $MATCHES)) {
@@ -224,9 +227,8 @@ class RouterosApiClient
 		}
 	}
 
-
 	/**
-	* Change "-" and "/" from array key to "_"
+	* Change '-' and '/' from array key to '_'
 	*
 	* @param array       $array      Input array
 	*
@@ -236,8 +238,8 @@ class RouterosApiClient
 	{
 		if (is_array($array)) {
 			foreach ($array as $k => $v) {
-				$tmp = str_replace("-", "_", $k);
-				$tmp = str_replace("/", "_", $tmp);
+				$tmp = str_replace('-', '_', $k);
+				$tmp = str_replace('/', '_', $tmp);
 				if ($tmp) {
 					$array_new[$tmp] = $v;
 				} else {
@@ -297,7 +299,7 @@ class RouterosApiClient
 			}
 			// If we have got more characters to read, read them in.
 			if ($LENGTH > 0) {
-				$_      = "";
+				$_      = '';
 				$retlen = 0;
 				while ($retlen < $LENGTH) {
 					$toread = $LENGTH - $retlen;
@@ -308,7 +310,7 @@ class RouterosApiClient
 				$this->debug('>>> [' . $retlen . '/' . $LENGTH . '] bytes read.');
 			}
 			// If we get a !done, make a note of it.
-			if ($_ == "!done") {
+			if (isset($_) && ($_ == '!done')) {
 				$receiveddone = true;
 			}
 			$STATUS = socket_get_status($this->socket);
@@ -351,7 +353,8 @@ class RouterosApiClient
 				$this->debug('<<< [' . strlen('.tag=' . $param2) . '] .tag=' . $param2);
 			} else if (gettype($param2) == 'boolean') {
 				fwrite($this->socket, ($param2 ? chr(0) : ''));
-				return true;
+			}
+			return true;
 		} else {
 			return false;
 		}
@@ -374,10 +377,10 @@ class RouterosApiClient
 		if ($this->is_iterable($arr)) {
 			foreach ($arr as $k => $v) {
 				switch ($k[0]) {
-					case "?":
+					case '?':
 						$el = "$k=$v";
 						break;
-					case "~":
+					case '~':
 						$el = "$k~$v";
 						break;
 					default:
