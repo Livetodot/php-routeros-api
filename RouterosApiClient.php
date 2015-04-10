@@ -14,16 +14,54 @@
 
 class RouterosApiClient
 {
+
+	private $_routerAddress;			// Address of ROS for this instance to connect to
+	private $_routerUsername;			// Username to use to connect to ROS
+	private $_routerPassword;			// Password to use to connect to ROS
+	protected $connected = false;	// Connection state
+
 	var $debug = false;      // Show debug information
 	var $error_no;           // Variable for storing connection error number, if any
 	var $error_str;          // Variable for storing connection error text, if any
 	var $attempts = 5;       // Connection attempt count
-	var $connected = false;  // Connection state
 	var $delay = 3;          // Delay between connection attempts in seconds
 	var $port = 8728;        // Port to connect to
 	var $timeout = 3;        // Connection attempt timeout and data read timeout
 	var $socket;             // Variable for storing socket resource
 
+	/**
+	 * Constructor. If provided sets the connection details to be used for this instance of the class. Optionally
+	 * auto-connects to the given RouterOS.
+	 *
+	 * @param string $address Address of RouterOS.
+	 * @param string $username Username to use to connect to RouterOS.
+ 	 * @param string $password Password to use to connect to RouterOS.
+ 	 * @param string $connect Connect to routerboard now? True to connect, false not to. Will only connect if all RouterOS
+	 *                        details have been provided.
+	 */
+	public function __construct($address = null, $username = null, $password = null, $connect = false) {
+	
+		if ($address !== null) {
+			$this->_routerAddress = $address;
+		}
+
+		if ($username !== null) {
+			$this->_routerUsername = $username;
+		}
+
+		if ($password !== null) {
+			$this->_routerPassword = $password;
+		}
+		
+		if (($connect == true)
+		    && isset($this->_routerAddress)
+		    && isset($this->_routerUsername)
+		    && isset($this->_routerPassword)) {
+			$this->connect();
+		}
+	
+	}
+	
 	/* Check, can be var used in foreach  */
 	function is_iterable($var)
 	{
@@ -78,49 +116,60 @@ class RouterosApiClient
 
 
 	/**
-	* Login to RouterOS
+	* Log in to RouterOS.
 	*
-	* @param string      $ip         Hostname (IP or domain) of the RouterOS server
-	* @param string      $login      The RouterOS username
-	* @param string      $password   The RouterOS password
+	* @param string $ip Hostname (IP or domain) of the RouterOS server. Only valid if class doesn't have an address set.
+	* @param string $login The RouterOS username. Only valid if class doesn't have a username set.
+	* @param string $password The RouterOS password. Only valid if class doesn't have a password set.
 	*
-	* @return boolean                If we are connected or not
+	* @return boolean If we are connected or not
 	*/
-	function connect($ip, $login, $password)
+	function connect($ip = null, $login = null, $password = null)
 	{
-		for ($ATTEMPT = 1; $ATTEMPT <= $this->attempts; $ATTEMPT++) {
-			$this->connected = false;
-			$this->debug('Connection attempt #' . $ATTEMPT . ' to ' . $ip . ':' . $this->port . '...');
-			$this->socket = @fsockopen($ip, $this->port, $this->error_no, $this->error_str, $this->timeout);
-			if ($this->socket) {
-				socket_set_timeout($this->socket, $this->timeout);
-				$this->write('/login');
-				$RESPONSE = $this->read(false);
-				if (isset($RESPONSE[0]) && $RESPONSE[0] == '!done') {
-					$MATCHES = array();
-					if (preg_match_all('/[^=]+/i', $RESPONSE[1], $MATCHES)) {
-						if ($MATCHES[0][0] == 'ret' && strlen($MATCHES[0][1]) == 32) {
-							$this->write('/login', false);
-							$this->write('=name=' . $login, false);
-							$this->write('=response=00' . md5(chr(0) . $password . pack('H*', $MATCHES[0][1])));
-							$RESPONSE = $this->read(false);
-							if ($RESPONSE[0] == '!done') {
-								$this->connected = true;
-								break;
+	
+		$ip = ($this->_routerAddress != null) ? $this->_routerAddress : $ip ;
+		$login = ($this->_routerAddress != null) ? $this->_routerUsername : $login ;
+		$password = ($this->_routerAddress != null) ? $this->_routerPassword : $password ;
+
+		if (($ip != null) && ($login != null) && ($password != null)) {
+			for ($ATTEMPT = 1; $ATTEMPT <= $this->attempts; $ATTEMPT++) {
+				$this->connected = false;
+				$this->debug('Connection attempt #' . $ATTEMPT . ' to ' . $ip . ':' . $this->port . '...');
+				$this->socket = @fsockopen($ip, $this->port, $this->error_no, $this->error_str, $this->timeout);
+				if ($this->socket) {
+					socket_set_timeout($this->socket, $this->timeout);
+					$this->write('/login');
+					$RESPONSE = $this->read(false);
+					if (isset($RESPONSE[0]) && $RESPONSE[0] == '!done') {
+						$MATCHES = array();
+						if (preg_match_all('/[^=]+/i', $RESPONSE[1], $MATCHES)) {
+							if ($MATCHES[0][0] == 'ret' && strlen($MATCHES[0][1]) == 32) {
+								$this->write('/login', false);
+								$this->write('=name=' . $login, false);
+								$this->write('=response=00' . md5(chr(0) . $password . pack('H*', $MATCHES[0][1])));
+								$RESPONSE = $this->read(false);
+								if ($RESPONSE[0] == '!done') {
+									$this->connected = true;
+									break;
+								}
 							}
 						}
 					}
+					fclose($this->socket);
 				}
-				fclose($this->socket);
+				sleep($this->delay);
 			}
-			sleep($this->delay);
-		}
-		if ($this->connected) {
-			$this->debug('Connected...');
+			if ($this->connected) {
+				$this->debug('Connected...');
+			} else {
+				$this->debug('Error...');
+			}
 		} else {
-			$this->debug('Error...');
+			$this->debug('Error: RouterOS details not set.');
 		}
+		
 		return $this->connected;
+		
 	}
 
 
