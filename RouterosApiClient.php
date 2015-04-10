@@ -44,8 +44,9 @@ class RouterosApiClient
 	*/
 	function debug($text)
 	{
-		if ($this->debug)
+		if ($this->debug) {
 			echo $text . "\n";
+		}
 	}
 
 
@@ -69,8 +70,9 @@ class RouterosApiClient
 		} else if ($length < 0x10000000) {
 			$length |= 0xE0000000;
 			$length = chr(($length >> 24) & 0xFF) . chr(($length >> 16) & 0xFF) . chr(($length >> 8) & 0xFF) . chr($length & 0xFF);
-		} else if ($length >= 0x10000000)
+		} else if ($length >= 0x10000000) {
 			$length = chr(0xF0) . chr(($length >> 24) & 0xFF) . chr(($length >> 16) & 0xFF) . chr(($length >> 8) & 0xFF) . chr($length & 0xFF);
+		}
 		return $length;
 	}
 
@@ -113,10 +115,11 @@ class RouterosApiClient
 			}
 			sleep($this->delay);
 		}
-		if ($this->connected)
+		if ($this->connected) {
 			$this->debug('Connected...');
-		else
+		} else {
 			$this->debug('Error...');
+		}
 		return $this->connected;
 	}
 
@@ -155,7 +158,7 @@ class RouterosApiClient
 				))) {
 				if ($x == '!re') {
 					$CURRENT =& $PARSED[];
-				} else
+				} else {
 					$CURRENT =& $PARSED[$x][];
 				} else if ($x != '!done') {
 					$MATCHES = array();
@@ -195,9 +198,9 @@ class RouterosApiClient
 					'!re',
 					'!trap'
 				))) {
-				if ($x == '!re')
+				if ($x == '!re') {
 					$CURRENT =& $PARSED[];
-				else
+				} else {
 					$CURRENT =& $PARSED[$x][];
 				} else if ($x != '!done') {
 					$MATCHES = array();
@@ -274,8 +277,8 @@ class RouterosApiClient
 					$LENGTH = (($BYTE & 63) << 8) + ord(fread($this->socket, 1));
 				} else {
 					if (($BYTE & 224) == 192) {
-					$LENGTH = (($BYTE & 31) << 8) + ord(fread($this->socket, 1));
-					$LENGTH = ($LENGTH << 8) + ord(fread($this->socket, 1));
+						$LENGTH = (($BYTE & 31) << 8) + ord(fread($this->socket, 1));
+						$LENGTH = ($LENGTH << 8) + ord(fread($this->socket, 1));
 					} else {
 						if (($BYTE & 240) == 224) {
 							$LENGTH = (($BYTE & 15) << 8) + ord(fread($this->socket, 1));
@@ -305,16 +308,20 @@ class RouterosApiClient
 				$this->debug('>>> [' . $retlen . '/' . $LENGTH . '] bytes read.');
 			}
 			// If we get a !done, make a note of it.
-			if ($_ == "!done")
+			if ($_ == "!done") {
 				$receiveddone = true;
+			}
 			$STATUS = socket_get_status($this->socket);
-			if ($LENGTH > 0)
+			if ($LENGTH > 0) {
 				$this->debug('>>> [' . $LENGTH . ', ' . $STATUS['unread_bytes'] . ']' . $_);
-			if ((!$this->connected && !$STATUS['unread_bytes']) || ($this->connected && !$STATUS['unread_bytes'] && $receiveddone))
+			}
+			if ((!$this->connected && !$STATUS['unread_bytes']) || ($this->connected && !$STATUS['unread_bytes'] && $receiveddone)) {
 				break;
+			}
 		}
-		if ($parse)
+		if ($parse) {
 			$RESPONSE = $this->parse_response($RESPONSE);
+		}
 		return $RESPONSE;
 	}
 
@@ -342,11 +349,12 @@ class RouterosApiClient
 			if (gettype($param2) == 'integer') {
 				fwrite($this->socket, $this->encode_length(strlen('.tag=' . $param2)) . '.tag=' . $param2 . chr(0));
 				$this->debug('<<< [' . strlen('.tag=' . $param2) . '] .tag=' . $param2);
-			} else if (gettype($param2) == 'boolean')
+			} else if (gettype($param2) == 'boolean') {
 				fwrite($this->socket, ($param2 ? chr(0) : ''));
 				return true;
-		} else
+		} else {
 			return false;
+		}
 	}
 
 
