@@ -66,11 +66,10 @@ class RouterosApiClient
 	function is_iterable($var)
 	{
 		return $var !== null
-		&& (is_array($var)
-		|| $var instanceof Traversable
-		|| $var instanceof Iterator
-		|| $var instanceof IteratorAggregate
-		);
+		       && (is_array($var)
+		           || $var instanceof Traversable
+		           || $var instanceof Iterator
+		           || $var instanceof IteratorAggregate);
 	}
 
 	/**
